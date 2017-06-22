@@ -1,0 +1,11 @@
+option java_package = "proto";
+option java_outer_classname = "CalculatorProxy";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+import "CalculatorProxyMsg.proto";
+
+service CalculatorProxyService {
+    rpc add(ProxyRequestProto) returns (ProxyResponseProto);
+    rpc minus(ProxyRequestProto) returns (ProxyResponseProto);
+}

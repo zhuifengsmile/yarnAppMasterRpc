@@ -1,0 +1,18 @@
+option java_package = "proto";
+option java_outer_classname = "EchoMsg";
+option  java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+message EchoRequestProto {
+    required string input = 1;
+}
+
+message EchoResponseProto {
+    required string result = 1;
+}
+
+message CloseRequestProto {
+}
+
+message CloseResponseProto {
+}

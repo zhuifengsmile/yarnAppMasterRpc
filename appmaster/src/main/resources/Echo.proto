@@ -1,0 +1,11 @@
+option java_package = "proto";
+option java_outer_classname = "EchoPb";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+import "EchoMsg.proto";
+
+service EchoService {
+    rpc echo(EchoRequestProto) returns (EchoResponseProto);
+    rpc close(CloseRequestProto) returns (CloseResponseProto);
+}

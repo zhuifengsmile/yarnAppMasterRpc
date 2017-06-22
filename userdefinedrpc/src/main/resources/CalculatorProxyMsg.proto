@@ -1,0 +1,14 @@
+option java_package = "proto";
+option java_outer_classname = "CalculatorProxyMsg";
+option  java_generic_services = true;
+option java_generate_equals_and_hash = true;
+
+message ProxyRequestProto {
+    required string methodName = 1;
+    required int32 num1 = 2;
+    required int32 num2 = 3;
+}
+
+message ProxyResponseProto {
+    required int32 result = 1;
+}
