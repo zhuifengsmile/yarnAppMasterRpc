@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<configuration>
+    <property>
+      <name>rpc.service.listen.port</name>
+      <value></value>
+      <description>app master rpc port</description>
+    </property>
+
+    <property>
+      <name>rpc.service.zk.addr</name>
+      <value></value>
+      <description>zookeeper address</description>
+    </property>
+
+    <property>
+        <name>rpc.service.zk.path</name>
+        <value></value>
+        <description>zookeeper address</description>
+    </property>
+</configuration>

@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import utils.Constants;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -40,19 +41,47 @@ import java.net.URL;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
 public class TestAppMaster {
 
   private static final Log LOG = LogFactory.getLog(TestAppMaster.class);
 
+  MiniZookeeperCluster zkCluster;
   protected MiniYARNCluster yarnCluster = null;
   protected YarnConfiguration conf = null;
   private static final int NUM_NMS = 1;
+  private String rpcConfig;
 
   protected final static String APPMASTER_JAR = JarFinder.getJar(ApplicationMaster.class);
 
   @Before
   public void setup() throws Exception {
+    setupZk();
     setupInternal(NUM_NMS);
+  }
+
+  protected void setupZk() throws Exception {
+    zkCluster = new MiniZookeeperCluster();
+    URL url = Thread.currentThread().getContextClassLoader().getResource("rpc_service.xml");
+    if (url == null) {
+      throw new RuntimeException("Could not find 'rpc_service.xml' dummy file in classpath");
+    }
+    rpcConfig = url.getPath();
+    Configuration conf = new Configuration();
+    conf.clear();
+    conf.set(Constants.RPC_SERVICE_ZK_ADDR, zkCluster.getSpec());
+    conf.set(Constants.RPC_SERVICE_ZK_PATH, "/rpc/master");
+    conf.setInt(Constants.RPC_SERVICE_PORT, 9010);
+    //write the document to a buffer (not directly to the file, as that
+    //can cause the file being written to get read -which will then fail.
+    ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+    conf.writeXml(bytesOut);
+    bytesOut.close();
+    //write the bytes to the file in the classpath
+    OutputStream os = new FileOutputStream(new File(url.getPath()));
+    os.write(bytesOut.toByteArray());
+    os.close();
+    System.out.println("zk init succeed");
   }
 
   protected void setupInternal(int numNodeManager) throws Exception {
@@ -62,7 +91,6 @@ public class TestAppMaster {
     conf = new YarnConfiguration();
     conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 128);
     conf.set("yarn.log.dir", "target");
-    conf.setBoolean(YarnConfiguration.TIMELINE_SERVICE_ENABLED, true);
     conf.set(YarnConfiguration.RM_SCHEDULER, CapacityScheduler.class.getName());
     
     if (yarnCluster == null) {
@@ -95,6 +123,14 @@ public class TestAppMaster {
 
   @After
   public void tearDown() throws IOException {
+    if (zkCluster != null) {
+      try {
+        zkCluster.shutdown();
+      } finally {
+        zkCluster = null;
+      }
+    }
+
     if (yarnCluster != null) {
       try {
         yarnCluster.stop();
@@ -112,7 +148,9 @@ public class TestAppMaster {
         "--master_memory",
         "512",
         "--master_vcores",
-        "2"
+        "2",
+            "-files",
+            rpcConfig
     };
 
     LOG.info("Initializing DS Client");

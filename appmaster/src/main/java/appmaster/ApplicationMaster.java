@@ -50,8 +50,6 @@ public class ApplicationMaster {
   @SuppressWarnings("rawtypes")
   private AMRMClientAsync amRMClient;
 
-  private volatile boolean done;
-
   private RpcServer rpcServer;
 
   /**
@@ -99,6 +97,8 @@ public class ApplicationMaster {
   public ApplicationMaster() throws IOException {
     // Set up the configuration
     conf = new YarnConfiguration();
+    LOG.info("yarn.resourcemanager.address=" + conf.get("yarn.resourcemanager.address"));
+    LOG.info("yarn.resourcemanager.scheduler.address" + conf.get("yarn.resourcemanager.scheduler.address"));
     loadLocalResource();
   }
 
@@ -119,8 +119,8 @@ public class ApplicationMaster {
 
     if (args.length == 0) {
       printUsage(opts);
-      throw new IllegalArgumentException(
-          "No args specified for application master to initialize");
+//      throw new IllegalArgumentException(
+//          "No args specified for application master to initialize");
     }
 
     if (cliParser.hasOption("help")) {
@@ -167,16 +167,6 @@ public class ApplicationMaster {
   }
 
   protected boolean finish() {
-    if(null != rpcServer){
-      rpcServer.stop();
-      rpcServer = null;
-    }
-    // wait for completion.
-    while (!done) {
-      try {
-        Thread.sleep(200);
-      } catch (InterruptedException ex) {}
-    }
     // When the application completes, it should send a finish application
     // signal to the RM
     LOG.info("Application completed. Signalling finish to RM");
@@ -194,6 +184,17 @@ public class ApplicationMaster {
     }
     
     amRMClient.stop();
+
+    if(null != rpcServer){
+      try {
+        rpcServer.stop();
+      } catch (Exception e) {
+        LOG.error("stop RpcServer failed", e);
+      }finally {
+        rpcServer = null;
+      }
+    }
+
     return true;
   }
   
@@ -209,7 +210,9 @@ public class ApplicationMaster {
 
     @Override
     public void onShutdownRequest() {
-      done = true;
+      if(null != rpcServer){
+        rpcServer.cancel("onShutdownRequest");
+      }
     }
 
     @Override
@@ -222,7 +225,6 @@ public class ApplicationMaster {
 
     @Override
     public void onError(Throwable e) {
-      done = true;
       amRMClient.stop();
     }
   }

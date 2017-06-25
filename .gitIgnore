@@ -1,1 +1,9 @@
 .idea
+appmaster/appmaster.iml
+conf/
+hadoopRpc/hadoopRpc.iml
+proxy/proxy.iml
+proxy/target/
+userdefinedrpc/target/
+userdefinedrpc/userdefined-rpc.iml
+yarnAppMasterRpc.iml

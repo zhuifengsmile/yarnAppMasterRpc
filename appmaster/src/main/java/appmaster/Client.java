@@ -49,6 +49,8 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.timeline.TimelineUtils;
+import utils.Preconditions;
+import utils.StringUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -124,7 +126,7 @@ public class Client {
    */
   public Client(Configuration conf) throws Exception  {
     this(
-      "appmaster.ApplicationMaster",
+      ApplicationMaster.class.getName(),
       conf);
   }
 
@@ -276,7 +278,7 @@ public class Client {
 
       // Check app status every 1 second.
       try {
-        Thread.sleep(1000);
+        Thread.sleep(10000);
       } catch (InterruptedException e) {
         LOG.debug("Thread sleep in monitoring loop interrupted");
       }
@@ -342,8 +344,17 @@ public class Client {
   private void addToLocalResources(FileSystem fs, String fileSrcPath,
                                    String fileDstPath, String appId, Map<String, LocalResource> localResources,
                                    String resources) throws IOException {
+    if (StringUtils.isEmpty(fileSrcPath) || StringUtils.isEmpty(fileDstPath)) {
+      return;
+    }
+    Preconditions.checkArgument(StringUtil.isNotEmpty(fileSrcPath) && StringUtil.isNotEmpty(fileDstPath),
+            "");
+    String resourceName = fileDstPath.substring(fileDstPath.lastIndexOf("/") + 1);
+    Preconditions.checkArgument(StringUtil.isNotEmpty(resourceName), "");
+    Preconditions.checkArgument(!localResources.containsKey(resourceName),
+            "resource:" + resourceName + " already exists");
     String suffix =
-        appName + "/" + appId + "/" + fileDstPath;
+        appName + "/" + appId + "/" + resourceName;
     Path dst =
         new Path(fs.getHomeDirectory(), suffix);
     if (fileSrcPath == null) {
@@ -364,7 +375,7 @@ public class Client {
             ConverterUtils.getYarnUrlFromURI(dst.toUri()),
             LocalResourceType.FILE, LocalResourceVisibility.APPLICATION,
             scFileStatus.getLen(), scFileStatus.getModificationTime());
-    localResources.put(fileDstPath, scRsrc);
+    localResources.put(resourceName, scRsrc);
   }
 
   private void printMetricsInfo() throws YarnException, IOException {
